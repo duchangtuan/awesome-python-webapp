@@ -5,36 +5,40 @@
 Database operation module. This module is independent with web module.
 '''
 
-import time, logging, db
+import time, logging
+
+import db
 
 class Field(object):
-     _count = 0
 
-     def __init__(self, **kw):
-         self.name = kw.get('name', None)
-         self._default = kw.get('default', None)
-         self.primary_key = kw.get('primary_key', False)
-         self.nullable = kw.get('nullable', False)
-         self.updatable = kw.get('updatable', True)
-         self.insertable = kw.get('insertable', True)
-         self.ddl = kw.get('ddl', '')
-         self._order = Field._count
-         Field._count = Field._count + 1
+    _count = 0
 
-     @property
-     def default(self):
-         d = self._default
-         return d() if callable(d) else d
+    def __init__(self, **kw):
+        self.name = kw.get('name', None)
+        self._default = kw.get('default', None)
+        self.primary_key = kw.get('primary_key', False)
+        self.nullable = kw.get('nullable', False)
+        self.updatable = kw.get('updatable', True)
+        self.insertable = kw.get('insertable', True)
+        self.ddl = kw.get('ddl', '')
+        self._order = Field._count
+        Field._count = Field._count + 1
 
-     def __str__(self):
-         s = ['<%s:%s,%s,default(%s),>' %(self.__class__.__name__, self.name, self.ddl, self._default)] 
-         self.nullable and s.append('N')
-         self.updatable and s.append('U')
-         self.insertable and s.append('I')
-         s.append('>')
-         return ''.join(s)
+    @property
+    def default(self):
+        d = self._default
+        return d() if callable(d) else d
+
+    def __str__(self):
+        s = ['<%s:%s,%s,default(%s),' % (self.__class__.__name__, self.name, self.ddl, self._default)]
+        self.nullable and s.append('N')
+        self.updatable and s.append('U')
+        self.insertable and s.append('I')
+        s.append('>')
+        return ''.join(s)
 
 class StringField(Field):
+
     def __init__(self, **kw):
         if not 'default' in kw:
             kw['default'] = ''
@@ -43,6 +47,7 @@ class StringField(Field):
         super(StringField, self).__init__(**kw)
 
 class IntegerField(Field):
+
     def __init__(self, **kw):
         if not 'default' in kw:
             kw['default'] = 0
@@ -51,22 +56,25 @@ class IntegerField(Field):
         super(IntegerField, self).__init__(**kw)
 
 class FloatField(Field):
-     def __init__(self, **kw):
-         if not 'default' in kw:
-             kw['default'] = 0.0
-         if not 'ddl' in kw:
-             kw['ddl'] = 'real'
-         super(FloatField, self).__init__(**kw)
+
+    def __init__(self, **kw):
+        if not 'default' in kw:
+            kw['default'] = 0.0
+        if not 'ddl' in kw:
+            kw['ddl'] = 'real'
+        super(FloatField, self).__init__(**kw)
 
 class BooleanField(Field):
-     def __init__(self, **kw):
-         if not 'default' in kw:
-             kw['default'] = False
-         if not 'ddl' in kw:
-             kw['ddl'] = 'bool'
-         super(BooleanField, Field).__init__(**kw)
+
+    def __init__(self, **kw):
+        if not 'default' in kw:
+            kw['default'] = False
+        if not 'ddl' in kw:
+            kw['ddl'] = 'bool'
+        super(BooleanField, self).__init__(**kw)
 
 class TextField(Field):
+
     def __init__(self, **kw):
         if not 'default' in kw:
             kw['default'] = ''
@@ -75,6 +83,7 @@ class TextField(Field):
         super(TextField, self).__init__(**kw)
 
 class BlobField(Field):
+
     def __init__(self, **kw):
         if not 'default' in kw:
             kw['default'] = ''
@@ -83,6 +92,7 @@ class BlobField(Field):
         super(BlobField, self).__init__(**kw)
 
 class VersionField(Field):
+
     def __init__(self, name=None):
         super(VersionField, self).__init__(name=name, default=0, ddl='bigint')
 
@@ -98,10 +108,10 @@ def _gen_sql(table_name, mappings):
         nullable = f.nullable
         if f.primary_key:
             pk = f.name
-        sql.append(nullable and '  `%s` %s,' % (f.name, ddl) or ' `%s` %s not null,' %(f.name, ddl))
-        sql.append(' primary key(`%s`)' % pk)
-        sql.append(');')
-        return '\n'.join(sql)
+        sql.append(nullable and '  `%s` %s,' % (f.name, ddl) or '  `%s` %s not null,' % (f.name, ddl))
+    sql.append('  primary key(`%s`)' % pk)
+    sql.append(');')
+    return '\n'.join(sql)
 
 class ModelMetaclass(type):
     '''
@@ -113,7 +123,7 @@ class ModelMetaclass(type):
             return type.__new__(cls, name, bases, attrs)
 
         # store all subclasses info:
-        if not hasattr(cls, 'subclass'):
+        if not hasattr(cls, 'subclasses'):
             cls.subclasses = {}
         if not name in cls.subclasses:
             cls.subclasses[name] = name
@@ -127,7 +137,7 @@ class ModelMetaclass(type):
             if isinstance(v, Field):
                 if not v.name:
                     v.name = k
-                logging.info('Found mapping: %s => %s' %(k, v))
+                logging.info('Found mapping: %s => %s' % (k, v))
                 # check duplicate primary key:
                 if v.primary_key:
                     if primary_key:
@@ -181,7 +191,7 @@ class Model(dict):
     >>> f.email
     u'orm@db.org'
     >>> f.email = 'changed@db.org'
-    >>> r = f.update() # change email but email is non-updatable
+    >>> r = f.update() # change email but email is non-updatable!
     >>> len(User.find_all())
     1
     >>> g = User.get(10190)
@@ -203,7 +213,7 @@ class Model(dict):
     );
     '''
     __metaclass__ = ModelMetaclass
-    
+
     def __init__(self, **kw):
         super(Model, self).__init__(**kw)
 
@@ -221,7 +231,7 @@ class Model(dict):
         '''
         Get by primary key.
         '''
-        d = db.select_one('select * from %s where %s=?' %(cls.__table__, cls.__primary_key__.name), pk)
+        d = db.select_one('select * from %s where %s=?' % (cls.__table__, cls.__primary_key__.name), pk)
         return cls(**d) if d else None
 
     @classmethod
@@ -230,7 +240,7 @@ class Model(dict):
         Find by where clause and return one result. If multiple results found.
         only the first one returned. If no result found, return None.
         '''
-        d = db.select_one('select * from %s %s' %(cls.__table__, where), *args)
+        d = db.select_one('select * from %s %s' % (cls.__table__, where), *args)
         return cls(**d) if d else None
 
     @classmethod
@@ -246,7 +256,7 @@ class Model(dict):
         '''
         Find by where clause and return list.
         '''
-        L = db.select('select * from `%s` %s' %(cls.__table__, where), *args)
+        L = db.select('select * from `%s` %s' % (cls.__table__, where), *args)
         return [cls(**d) for d in L]
 
     @classmethod
@@ -259,7 +269,7 @@ class Model(dict):
     @classmethod
     def count_by(cls, where, *args):
         '''
-        Find by 'select count(pk) from table where ...' and return int.
+        Find by 'select count(pk) from table where ... ' and return int.
         '''
         return db.select_int('select count(`%s`) from `%s` %s' % (cls.__primary_key__.name, cls.__table__, where), *args)
 
@@ -274,7 +284,7 @@ class Model(dict):
                 else:
                     arg = v.default
                     setattr(self, k, arg)
-                L.append('`%s`=?' %k)
+                L.append('`%s`=?' % k)
                 args.append(arg)
         pk = self.__primary_key__.name
         args.append(getattr(self, pk))
@@ -287,7 +297,7 @@ class Model(dict):
         args = (getattr(self, pk), )
         db.update('delete from `%s` where `%s`=?' % (self.__table__, pk), *args)
         return self
-    
+
     def insert(self):
         self.pre_insert and self.pre_insert()
         params = {}
