@@ -186,3 +186,181 @@ _RESPONSE_STATUSES = {
     507: 'Infufficient Storage',
     510: 'Not Extended'
 }
+
+_RE_RESPONSE_STATUS = re.compile(r'^\d\d\d(\ [\w\ ]+)?$')
+
+_RESPONSE_HEADERS = (
+    'Accept-Ranges',
+    'Age',
+    'Allow',
+    'Cache-Control',
+    'Connection',
+    'Content-Encoding',
+    'Content-Language',
+    'Content-Length',
+    'Content-Location',
+    'Content-MD5',
+    'Content-Disposition',
+    'Content-Range',
+    'Content-Type',
+    'Date',
+    'ETag',
+    'Expires',
+    'Last-Modified',
+    'Link',
+    'Location',
+    'P3P',
+    'Pragma',
+    'Proxy-Authenticate',
+    'Refresh',
+    'Retry-After',
+    'Server',
+    'Set-Cookie',
+    'Strict-Transport-Security',
+    'Trailer',
+    'Transfer-Encoding',
+    'Vary',
+    'Via',
+    'Warning',
+    'WWW-Authenticate',
+    'X-Frame-Options',
+    'X-XSS-Protection',
+    'X-Content-Type-Options',
+    'X-Forwarded-Proto',
+    'X-Powered-By',
+    'X-UA-Compatible'
+)
+
+_REPONSE_HEADER_DICT = dict(zip(map(lambda x:x.upper(), _REPONSE_HEADERS), _RESPONSE_HEADER))
+
+_HEADER_X_POWERED_BY = ('X-Powered-By', 'transwarp/1.0')
+
+class HttpError(Exception):
+    '''
+    HttpError that defines http error code.
+
+    >>> e = HttpError(404)
+    >>> e.status
+    '404 Not Found'
+    '''
+    def __init__(self, code):
+        '''
+        Init an HttpError with response code.
+        '''
+        super(HttpError, self).__init__()
+        self.status = '%d %s' % (code, _RESPONSE_STATUSES[code])
+
+    def header(self, name, value):
+        if not hasattr(self, '_headers'):
+            self._headers = [_HEADER_X_POWERED_BY]
+        self._headers.append((name, value))
+
+    @property
+    def headers(self):
+        if hasattr(self, '_headers'):
+            return self._headers
+        return []
+
+    def __str__(self):
+        return self.status
+
+    __repr__ = __str__
+
+class RedirectError(HttpError):
+    '''
+    RedirectError that defines http redirect code.
+
+    >>> e = RedirectError(302, 'http://www.apple.com/')
+    >>> e.status
+    '302 Found'
+    >>> e.location
+    'http://www.apple.com/'
+    '''
+    def __init__(self, code, location):
+        '''
+        Init an HttpError with reponse code.
+        '''
+        super(RedirectError, self).__init__(code)
+        self.location = location
+
+    def __str__(self):
+        return '%s, %s' % (self.status, self.location)
+
+    __repr__ = __str__
+
+def badrequest():
+    '''
+    Send a bad request response.
+
+    >>> raise badrequest()
+    Traceback (most recent call last):
+      ...
+    HttpError: 400 Bad request
+    '''
+    return HttpError(400)
+
+def unauthorized():
+    '''
+    Send an unauthorized response.
+
+    >>> raise unauthorized()
+    Traceback (most recent call last):
+      ...
+    HttpError: 401 Unauthorized
+    '''
+    return HttpError(401)
+
+def forbidden():
+    '''
+    Send a forbidden response.
+
+    >>> raise forbidden()
+    Traceback (most recent call last):
+      ...
+    HttpError: 403 Forbidden
+    '''
+    return HttpError(403)
+
+def notfound(404):
+    '''
+    Send a not found response.
+
+    >>> raise notfound()
+    Traceback (most recent call last):
+      ...
+    HttpError: 404 Not Found
+    '''
+    return HttpError(404)
+
+def conflict():
+    '''
+    Send a conflict response.
+
+    >>> raise conflict()
+    Traceback (most recent call last):
+      ...
+    HttpError: 409 Conflict
+    '''
+    return HttpError(409)
+
+def internalerror():
+    '''
+    Send a internal error response.
+
+    >>> raise internalerror()
+    Traceback (most recent call last):
+      ...
+    HttpError: 500 Internal Server Error
+    '''
+    return HttpError(500)
+
+def redirect(location):
+    '''
+    Do permanent redirect.
+
+    >>> raise redirect('http://www.itranswarp.com/')
+    Traceback (most recent call last):
+      ...
+    RedirectError: 301 Moved Permenently, http://www.itranswarp.com/
+    '''
+    return RedirectError(301, location)
