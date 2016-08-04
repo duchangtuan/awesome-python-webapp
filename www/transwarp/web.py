@@ -5,7 +5,7 @@
 A simple, lightweight, WSGI-compatible, web framework.
 '''
 
-import types, os, re, cgi, sys, time, datetiem, functools, mimetypes, threading, logging, urllib, traceback
+import types, os, re, cgi, sys, time, datetime, functools, mimetypes, threading, logging, urllib, traceback
 
 try:
     from cStringIO import StringIO
@@ -52,7 +52,7 @@ class Dict(dict):
         for k, v in zip(names, values):
             self[k] = v
 
-    def __getter__(self, key):
+    def __getattr__(self, key):
         try:
             return self[key]
         except KeyError:
@@ -105,7 +105,7 @@ class UTC(datetime.tzinfo):
             if minus:
                 h, m = (-h), (-m)
             self._utcoffset = datetime.timedelta(hours=h, minutes=m)
-            self._tzname = 'UTC%s' % UTC
+            self._tzname = 'UTC%s' % utc
         else:
             raise ValueError('bad utc time zone')
 
@@ -126,7 +126,7 @@ class UTC(datetime.tzinfo):
 # all known response status:
 
 _RESPONSE_STATUSES = {
-    #Infomational
+    #Informational
     100: 'Continue',
     101: 'Switching Protocols',
     102: 'Processing',
@@ -135,7 +135,7 @@ _RESPONSE_STATUSES = {
     200: 'OK',
     201: 'Created',
     202: 'Accepted',
-    203: 'Non_Authoritative Information',
+    203: 'Non Authoritative Information',
     204: 'No Content',
     205: 'Reset Content',
     206: 'Partial Content',
@@ -152,11 +152,11 @@ _RESPONSE_STATUSES = {
     307: 'Temporary Redirect',
 
     # Client Error
-    400: 'Bad request',
+    400: 'Bad Request',
     401: 'Unauthorized',
-    402: 'Payment Requirement',
+    402: 'Payment Required',
     403: 'Forbidden',
-    401: 'Not Found',
+    404: 'Not Found',
     405: 'Method Not Allowed',
     406: 'Not Acceptable',
     407: 'Proxy Authentication Required',
@@ -183,7 +183,7 @@ _RESPONSE_STATUSES = {
     503: 'Service Unavailable',
     504: 'Gateway Timeout',
     505: 'HTTP Version Not Supported',
-    507: 'Infufficient Storage',
+    507: 'Insufficient Storage',
     510: 'Not Extended'
 }
 
@@ -231,7 +231,7 @@ _RESPONSE_HEADERS = (
     'X-UA-Compatible'
 )
 
-_REPONSE_HEADER_DICT = dict(zip(map(lambda x:x.upper(), _REPONSE_HEADERS), _RESPONSE_HEADER))
+_RESPONSE_HEADER_DICT = dict(zip(map(lambda x:x.upper(), _RESPONSE_HEADERS), _RESPONSE_HEADERS))
 
 _HEADER_X_POWERED_BY = ('X-Powered-By', 'transwarp/1.0')
 
@@ -295,7 +295,7 @@ def badrequest():
     >>> raise badrequest()
     Traceback (most recent call last):
       ...
-    HttpError: 400 Bad request
+    HttpError: 400 Bad Request
     '''
     return HttpError(400)
 
@@ -321,7 +321,7 @@ def forbidden():
     '''
     return HttpError(403)
 
-def notfound(404):
+def notfound():
     '''
     Send a not found response.
 
@@ -361,11 +361,11 @@ def redirect(location):
     >>> raise redirect('http://www.itranswarp.com/')
     Traceback (most recent call last):
       ...
-    RedirectError: 301 Moved Permenently, http://www.itranswarp.com/
+    RedirectError: 301 Moved Permanently, http://www.itranswarp.com/
     '''
     return RedirectError(301, location)
 
-def fount(location):
+def found(location):
     '''
     Do temporary redirect.
 
@@ -383,7 +383,8 @@ def seeother(location):
     >>> raise seeother('http://www.itranswarp.com/')
     Traceback (most recent call last):
       ...
-    >>> e = seeother('http://ww.itranswarp.com/seeother?r=123')
+    RedirectError: 303 See Other, http://www.itranswarp.com/
+    >>> e = seeother('http://www.itranswarp.com/seeother?r=123')
     >>> e.location
     'http://www.itranswarp.com/seeother?r=123'
     '''
@@ -406,7 +407,7 @@ def _to_str(s):
         return s.encode('utf-8')
     return str(s)
 
-def _to_unicode(s):
+def _to_unicode(s, encoding='utf-8'):
     '''
     Convert to unicode.
 
@@ -439,7 +440,7 @@ def _unquote(s, encoding='utf-8'):
 
 def get(path):
     '''
-    A @get decoder.
+    A @get decorator.
 
     @get('/:id')
     def index(id):
@@ -483,14 +484,14 @@ def post(path):
         return func
     return _decorator
 
-_re_route = re.compile(r'(\:[a-zA-Z_]\w)')
+_re_route = re.compile(r'(\:[a-zA-Z_]\w*)')
 
 def _build_regex(path):
     r'''
     Convert route path to regex.
 
     >>> _build_regex('/path/to/:file')
-    '^\\/path\\to\\/(?P<file>[^\\/]+)$'
+    '^\\/path\\/to\\/(?P<file>[^\\/]+)$'
     >>> 
     '''
     re_list = ['^']
@@ -561,7 +562,7 @@ class StaticFileRoute(object):
         self.route = re.compile('^/static/(.+)$')
 
     def match(self, url):
-        if usl.startwith('/static/'):
+        if url.startwith('/static/'):
             return (url[1:], )
         return None
 
@@ -602,10 +603,10 @@ class Request(object):
             if item.filename:
                 return MultipartFile(item)
             return _to_unicode(item.value)
-        fs = cgi.FiledStorage(fp=self._environ['wsgi.input'], environ=self._environ, keep_blank_values=True)
+        fs = cgi.FieldStorage(fp=self._environ['wsgi.input'], environ=self._environ, keep_blank_values=True)
         inputs = dict()
         for key in fs:
-            inputs[key] = _convert[fs[key]]
+            inputs[key] = _convert(fs[key])
         return inputs
 
     def _get_raw_input(self):
@@ -633,7 +634,6 @@ class Request(object):
         >>> r.get('empty')
         >>> r.get('empty', 'DEFAULT')
         'DEFAULT'
-        ...
         '''
         r = self._get_raw_input().get(key, default)
         if isinstance(r, list):
@@ -724,7 +724,7 @@ class Request(object):
         return self._environ.get('DOCUMENT_ROOT', '')
 
     @property
-    def query_strign(self):
+    def query_string(self):
         '''
         Get raw query string as str. Return '' if no query string.
 
@@ -776,7 +776,7 @@ class Request(object):
         >>> r.path_info
         '/test/a b.html'
         '''        
-        return self._environ[self._environ.get('PATH_INFO', '')]
+        return urllib.unquote(self._environ.get('PATH_INFO', ''))
 
     @property
     def host(self):
@@ -793,7 +793,7 @@ class Request(object):
         if not hasattr(self, '_headers'):
             hdrs = {}
             for k, v in self._environ.iteritems():
-                if k.startwith('HTTP_'):
+                if k.startswith('HTTP_'):
                     # convert 'HTTP_ACCEPT_ENCODING' to 'ACCEPT-ENCODING'
                     hdrs[k[5:].replace('_', '-').upper()] = v.decode('utf-8')
             self._headers = hdrs
@@ -804,7 +804,7 @@ class Request(object):
         '''
         Get all HTTP headers with key as str and value as unicode. The header names are 'XXX-XXX' uppercase.
 
-        >>> r = Requst({'HTTP_USER_AGENT': 'Mozilla/5.0', 'HTTP_ACCEPT': 'text/html'})
+        >>> r = Request({'HTTP_USER_AGENT': 'Mozilla/5.0', 'HTTP_ACCEPT': 'text/html'})
         >>> H = r.headers
         >>> H['ACCEPT']
         u'text/html'
@@ -855,7 +855,7 @@ class Request(object):
         >>> r.cookies['A']
         u'123'
         >>> r.cookies['url']
-        u'http://www.example.com'
+        u'http://www.example.com/'
         '''
         return Dict(**self._get_cookies())
 
@@ -961,6 +961,16 @@ class Response(object):
         'application/json'
         '''
         return self.header('CONTENT-TYPE')
+
+    @content_type.setter
+    def content_type(self, value):
+        '''
+        Set content type for response. This is a shortcut for set header('Content-Type', value).
+        '''
+        if value:
+            self.set_header('CONTENT-TYPE', value)
+        else:
+            self.unset_header('CONTENT-TYPE')
 
     @property
     def content_length(self):
@@ -1149,7 +1159,7 @@ class Template(object):
         'Hello'
         >>> t.model['copyright']
         '@2012'
-        >>> t.Template('test.html', abc=u'ABC', xyz=u'XYZ')
+        >>> t = Template('test.html', abc=u'ABC', xyz=u'XYZ')
         >>> t.model['abc']
         u'ABC'
         '''
@@ -1230,13 +1240,13 @@ def view(path):
         return _wrapper
     return _decorator
 
-_RE_INTERCEPTOR_START_WITH = re.compile(r'^([^\*\?]+)\*?$')
+_RE_INTERCEPTOR_STARTS_WITH = re.compile(r'^([^\*\?]+)\*?$')
 _RE_INTERCEPTOR_ENDS_WITH = re.compile(r'^\*([^\*\?]+)$')
 
-def _build_pattern(pattern):
-    m = _RE_INTERCEPTOR_START_WITH.match(pattern)
+def _build_pattern_fn(pattern):
+    m = _RE_INTERCEPTOR_STARTS_WITH.match(pattern)
     if m:
-        return lambda p:p.startwith(m.group(1))
+        return lambda p:p.startswith(m.group(1))
     m = _RE_INTERCEPTOR_ENDS_WITH.match(pattern)
     if m:
         return lambda p: p.endswith(m.group(1))
@@ -1331,11 +1341,11 @@ def _load_module(module_name):
     if last_dot ==(-1):
         return __import__(module_name, globals(), locals())
     from_module = module_name[:last_dot]
-    import_module = module_name[last_dot+1]:
+    import_module = module_name[last_dot+1:]
     m = __import__(from_module, globals(), locals(), [import_module])
     return getattr(m, import_module)
 
-class WSGIapplication(object):
+class WSGIApplication(object):
     
     def __init__(self, document_root=None, **kw):
         '''
@@ -1364,14 +1374,14 @@ class WSGIapplication(object):
     def template_engine(self):
         return self._template_engine
 
-    @template_enginer.setter
+    @template_engine.setter
     def template_engine(self, engine):
         self._check_not_running()
         self._template_engine = engine
 
     def add_module(self, mod):
         self._check_not_running()
-        m = mod if type(mod)==type.ModuleType else _load_module(mod)
+        m = mod if type(mod)==types.ModuleType else _load_module(mod)
         logging.info('Add module: %s' % m.__name__)
         for name in dir(m):
             fn = getattr(m, name)
@@ -1395,7 +1405,7 @@ class WSGIapplication(object):
 
     def add_interceptor(self, func):
         self._check_not_running()
-        self._interceptor.append(func)
+        self._interceptors.append(func)
         logging.info('Add interceptor: %s' % str(func))
 
     def run(self, port=9000, host='127.0.0.1'):
@@ -1411,74 +1421,75 @@ class WSGIapplication(object):
         self._running = True
 
         _application = Dict(document_root=self._document_root)
-            
-            def fn_route():
-                request_method = ctx.request.request_method
-                path_info = ctx.request.path_info
-                if request_method == 'GET':
-                    fn = self._get_static.get(path_info, None)
-                    if fn:
-                        return fn()
-                    for fn in self._get_dynamic:
-                        args = fn.match(path_info)
-                        if args:
-                            return fn(*args)
-                    raise notfound()
-                if request_method == 'POST':
-                    fn = self._post_static.get(path_info, None)
-                    if fn:
-                        return fn()
-                    for fn in self._post_dynamic:
-                        args = fn.match(path_info)
-                        if args:
-                            return fn(*args)
-                    raise notfound()
-                raise bedrequest()
+             
+        def fn_route():
+            request_method = ctx.request.request_method
+            path_info = ctx.request.path_info
+            if request_method == 'GET':
+                fn = self._get_static.get(path_info, None)
+                if fn:
+                    return fn()
+                for fn in self._get_dynamic:
+                    args = fn.match(path_info)
+                    if args:
+                        return fn(*args)
+                raise notfound()
+            if request_method == 'POST':
+                fn = self._post_static.get(path_info, None)
+                if fn:
+                    return fn()
+                for fn in self._post_dynamic:
+                    args = fn.match(path_info)
+                    if args:
+                        return fn(*args)
+                raise notfound()
+            raise badrequest()
 
-            fn_exec = _build_interceptor_chain(fn_route, *self._interceptors)
+        fn_exec = _build_interceptor_chain(fn_route, *self._interceptors)
 
-            def wsgi(env, start_response):
-                ctx.application = _application
-                ctx.request = Request(env)
-                response = ctx.response = Response()
+        def wsgi(env, start_response):
+            ctx.application = _application
+            ctx.request = Request(env)
+            response = ctx.response = Response()
 
-                try:
-                    r = fn_exec()
-                    if isinstance(r, Template):
-                        r = self._template_engine(r.template_name, r.model)
-                    if isinstance(r, unicode):
-                        r = r.encode('utf-8')
-                    if r is None:
-                        r = []
-                    start_response(response.status, response.headers)
-                    return r
-                except RedirectError, e:
-                    response.set_header('Location', e.location)
-                    start_response(e.status, response.headers)
-                    return []
-                except HttpError, e:
-                    start_response(e.status, response.headers)
-                    return ['<html><body><h1>', e.status, '</h1></body></html>']                except Exception, e:
-                    logging.exception(e)
-                    if not debug:
-                        start_response('500 Internal Server Error', [])
-                        return ['<html><body><h1>500 Internal Server Error</h1></body></html>']
-                    exc_type, exc_value, exc_traceback = sys.exc_info()
-                    fp = StringIO()
-                    traceback.print_exception(exc_type, exc_value, exc_traceback, file=fp)
-                    stacks = fp.getvalue()
-                    fp.close()
-                    start_reponse('500 Internal Server Error', [])
-                    return [r'''<html><body><h1>500 Internal Server Error</h1><div style="font-family:Monaco, Menlo, Consolas, 'Courier New', monospace;"><pre>''',
-                    stacks.replace('<', '&lt;').replace('>', '&gt;'),
-                    '</pre></div></body></html>']
-                finally:
-                    del ctx.application
-                    del ctx.request
-                    del ctx.response
-            return wsgi
+            try:
+                r = fn_exec()
+                if isinstance(r, Template):
+                    r = self._template_engine(r.template_name, r.model)
+                if isinstance(r, unicode):
+                    r = r.encode('utf-8')
+                if r is None:
+                    r = []
+                start_response(response.status, response.headers)
+                return r
+            except RedirectError, e:
+                response.set_header('Location', e.location)
+                start_response(e.status, response.headers)
+                return []
+            except HttpError, e:
+                start_response(e.status, response.headers)
+                return ['<html><body><h1>', e.status, '</h1></body></html>']
+            except Exception, e:
+                logging.exception(e)
+                if not debug:
+                    start_response('500 Internal Server Error', [])
+                    return ['<html><body><h1>500 Internal Server Error</h1></body></html>']
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                fp = StringIO()
+                traceback.print_exception(exc_type, exc_value, exc_traceback, file=fp)
+                stacks = fp.getvalue()
+                fp.close()
+                start_reponse('500 Internal Server Error', [])
+                return [r'''<html><body><h1>500 Internal Server Error</h1><div style="font-family:Monaco, Menlo, Consolas, 'Courier New', monospace;"><pre>''',
+                stacks.replace('<', '&lt;').replace('>', '&gt;'),
+                '</pre></div></body></html>']
+            finally:
+                del ctx.application
+                del ctx.request
+                del ctx.response
+        return wsgi
 
 if __name__ == '__main__':
     sys.path.append('.')
     import doctest
-    doctest.testmode()
+    doctest.testmod()
