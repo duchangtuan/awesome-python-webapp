@@ -776,6 +776,7 @@ class Request(object):
         >>> r.path_info
         '/test/a b.html'
         '''        
+        #unquote('abc%20def') -> 'abc def'.
         return urllib.unquote(self._environ.get('PATH_INFO', ''))
 
     @property
@@ -894,7 +895,7 @@ class Response(object):
         >>> r.headers
         [('Content-Type', 'text/html; charset=utf-8'), ('Set-Cookie', 's1=ok; Max-Age=3600; Path=/; HttpOnly'), ('X-Powered-By', 'transwarp/1.0')]
         '''
-        L = [(_RESPONSE_HEADER_DICT.get(k, v), v) for k, v in self._headers.iteritems()]
+        L = [(_RESPONSE_HEADER_DICT.get(k, k), v) for k, v in self._headers.iteritems()]
         if hasattr(self, '_cookies'):
             for v in self._cookies.itervalues():
                 L.append(('Set-Cookie', v))
@@ -1493,3 +1494,4 @@ if __name__ == '__main__':
     sys.path.append('.')
     import doctest
     doctest.testmod()
+    print _RESPONSE_HEADER_DICT
