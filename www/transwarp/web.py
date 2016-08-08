@@ -1124,6 +1124,10 @@ class Response(object):
         >>> r.status = 99
         Traceback (most recent call last):
           ...
+        ValueError: Bad response code: 99
+        >>> r.status = 'ok'
+        Traceback (most recent call last):
+          ...
         ValueError: Bad response code: ok
         >>> r.status = [1, 2, 3]
         Traceback (most recent call last):
