@@ -553,7 +553,7 @@ def _static_file_generator(fpath):
         block = f.read(BLOCK_SIZE)
         while block:
             yield block
-            block = r.read(BLOCK_SIZE)
+            block = f.read(BLOCK_SIZE)
 
 class StaticFileRoute(object):
     def __init__(self):
@@ -562,7 +562,7 @@ class StaticFileRoute(object):
         self.route = re.compile('^/static/(.+)$')
 
     def match(self, url):
-        if url.startwith('/static/'):
+        if url.startswith('/static/'):
             return (url[1:], )
         return None
 
@@ -571,7 +571,7 @@ class StaticFileRoute(object):
         if not os.path.isfile(fpath):
             raise notfound()
         ftext = os.path.splitext(fpath)[1]
-        ctx.response.content_type = mimetypes.types_map.get(fext.lower(), 'application/octest-stream')
+        ctx.response.content_type = mimetypes.types_map.get(ftext.lower(), 'application/octest-stream')
         return _static_file_generator(fpath)
 
 def favicon_handler():
@@ -1484,7 +1484,7 @@ class WSGIApplication(object):
                 traceback.print_exception(exc_type, exc_value, exc_traceback, file=fp)
                 stacks = fp.getvalue()
                 fp.close()
-                start_reponse('500 Internal Server Error', [])
+                start_response('500 Internal Server Error', [])
                 return [r'''<html><body><h1>500 Internal Server Error</h1><div style="font-family:Monaco, Menlo, Consolas, 'Courier New', monospace;"><pre>''',
                 stacks.replace('<', '&lt;').replace('>', '&gt;'),
                 '</pre></div></body></html>']
