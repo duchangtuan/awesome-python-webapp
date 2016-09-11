@@ -1,19 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-<<<<<<< HEAD
-=======
 
->>>>>>> 8079a46dc6dff435a8a9444180dbcc86080d9764
 #urls.py
 
 import os, re, time, base64, hashlib, logging
 
-<<<<<<< HEAD
 from transwarp.web import get, view, post, ctx, interceptor, seeother, notfound
-=======
-from transwarp.web import get, view
 
->>>>>>> 8079a46dc6dff435a8a9444180dbcc86080d9764
 from apis import api, APIError, APIValueError, APIPermissionError, APIResourceNotFoundError
 
 from models import User, Blog, Comment
@@ -73,21 +66,18 @@ def manage_interceptor(next):
 
 @view('blogs.html')
 @get('/')
-def index():
+def test_user():
     blogs = Blog.find_all()
     # find the login users
     user = User.find_first('where email=?', 'fengxi1986@gmail.com')
     return dict(blogs=blogs, user=user)
 
-<<<<<<< HEAD
 @view('blogs.html')
 @get('/')
 def index():
     blogs = Blog.find_all()
     return dict(blogs=blogs, user=ctx.request.user)
 
-=======
->>>>>>> 8079a46dc6dff435a8a9444180dbcc86080d9764
 @view('signin.html')
 @get('/signin')
 def signin():
@@ -101,11 +91,7 @@ def signout():
 @api
 @post('/api/authenticate')
 def authenticate():
-<<<<<<< HEAD
     i = ctx.request.input(remember='')
-=======
-    i = ctx.request.input(remeber='')
->>>>>>> 8079a46dc6dff435a8a9444180dbcc86080d9764
     email = i.email.strip().lower()
     password = i.password
     remember = i.remember
@@ -139,14 +125,8 @@ def register_user():
         raise APIValueError('password')
     user = User.find_first('where email=?', email)
     if user:
-<<<<<<< HEAD
         raise APIError('register:failed', 'email', 'Email is already in use.')
     user = User(name=name, email=email, password=password, image='http://www.gravatar.com/avatar/%s?d=mm&s=120' % hashlib.md5(email).hexdigest())
-=======
-        raise APIError('register:failed', 'email', 'Email is already is user.')
-    user = User(name=name, email=email, password=password, 
-                image='http://www.gravatar.com/avatar/%s?d=d=mm&s=120' % hashlib.md5(email))
->>>>>>> 8079a46dc6dff435a8a9444180dbcc86080d9764
     user.insert()
     # make session cookie:
     cookie = make_signed_cookie(user.id, user.password, None)
@@ -158,8 +138,6 @@ def register_user():
 def register():
     return dict()
 
-<<<<<<< HEAD
-=======
 @api
 @get('/api/users')
 def api_get_users():
@@ -169,11 +147,3 @@ def api_get_users():
     return dict(users=users)
 
 
->>>>>>> 8079a46dc6dff435a8a9444180dbcc86080d9764
-@api
-@get('/api/users')
-def api_get_users():
-    users = User.find_by('order by created_at desc')
-    for u in users:
-        u.password = '******'
-    return dict(users=users)

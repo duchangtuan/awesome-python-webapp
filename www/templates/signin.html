@@ -1,19 +1,11 @@
 <!DOCTYPE html>
 <html class="uk-height-1-1">
 <head>
-<<<<<<< HEAD
     <meta charset="utf-8" />
     <title>登录 - Awesome Python Webapp</title>
     <!--[if lt IE 9]>
     <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
     <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
-=======
-    <meta charset="utf-8">
-    <title>Login - Awesome Python Webapp</title>
-    <!--[if lt IE 9]>
-    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-    <script scr="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
->>>>>>> 8079a46dc6dff435a8a9444180dbcc86080d9764
     <![endif]-->
     <link rel="stylesheet" href="/static/css/uikit.min.css">
     <link rel="stylesheet" href="/static/css/uikit.gradient.min.css">
@@ -22,35 +14,23 @@
     <script src="/static/js/uikit.min.js"></script>
     <script src="/static/js/vue.min.js"></script>
     <script src="/static/js/awesome.js"></script>
-    <script>
-<<<<<<< HEAD
+
+<script>
 $(function() {
     var vm = new Vue({
         el: '#form-signin',
         data: {
-=======
-
-$(function() {
-    var vm = new Vue({
-        el: '#form-signin',
-        data:{
->>>>>>> 8079a46dc6dff435a8a9444180dbcc86080d9764
             email: '',
             password: '',
             remember: false
         },
         methods: {
-<<<<<<< HEAD
-            submit: function (event) {
-=======
             submit: function(event){
->>>>>>> 8079a46dc6dff435a8a9444180dbcc86080d9764
                 event.preventDefault();
                 var email = this.email.trim().toLowerCase();
                 showError();
                 startLoading();
                 postApi('/api/authenticate', {
-<<<<<<< HEAD
                     email: email,
                     password: CryptoJS.MD5(this.password).toString(),
                     remember: this.remember
@@ -60,18 +40,6 @@ $(function() {
                     }
                     else {
                         return location.assign(result.admin ? '/manage/' : '/');
-=======
-                    email:emal;
-                    password: CryptoJS.MD5(this.password).toString(),
-                    remember: this.remeber
-                }, function(err, result){
-                    if (err){
-                        showError(err);
-
-                    }
-                    else{
-                        return location.assign(result.admin ? '/manage/': '/');
->>>>>>> 8079a46dc6dff435a8a9444180dbcc86080d9764
                     }
                     stopLoading();
                 });
@@ -79,9 +47,9 @@ $(function() {
         }
     });
 })
-<<<<<<< HEAD
-    </script>
+</script>
 </head>
+
 <body class="uk-height-1-1">
     <div class="uk-vertical-align uk-text-center uk-height-1-1">
         <div class="uk-vertical-align-middle" style="width: 320px">
@@ -108,37 +76,7 @@ $(function() {
                     <label class="uk-float-left"><input v-model="remember" type="checkbox"> 记住我</label>
                 </div>
             </form>
-=======
 
-</script>
-</head>
-<body class="uk-height-1-1">
-    <div class="uk-vertical-align uk-text-center uk-height-1-1">
-        <div class="uk-vertical-align-middle" style="width:320px">
-             <p><a href="/" class="uk-icon-button"><i class="uk-icon-html5"></i></a><a href="/">Awesome Python Webapp</a></p>
-             
-             <form id="form-signin" v-on="submit: submit" class="uk-panel uk-panel-box uk-form">
-                  <div class="uk-alert uk-alert-danger uk-hidden"></div>
-                  <div class="uk-form-row">
-                      <div class="uk-form-icon uk-width-1-1">
-                          <i class="uk-icon-envelop-o"></i>
-                          <input v-model="email" name="email" type="text" placeholder="Email" maxlength="50" class="uk-width-1-1 uk-form-large">
-                      </div>
-                  </div>
-                  <div class="uk-form-row">
-                      <div class="uk-form-icon uk-width-1-1">
-                          <i class="uk-icon-lock"></i>
-                          <input v-model="password" name="password" type="password" placeholder="Password" maxlength="50" class="uk-width-1-1 uk-form-large">
-                      </div>
-                  </div>
-                  <div class="uk-form-row">
-                      <button type="submit" class="uk-width-1-1 uk-button uk-button-primary uk-button-large"><i class="uk-icon-sign-in"></i>Login:</button>
-                  </div>
-                  <div class="uk-form-row uk-text-small">
-                      <label class="uk-float-left"><input v-model="remember" type="checkbox">Remember me</label>
-                  </div>
-             </form>
->>>>>>> 8079a46dc6dff435a8a9444180dbcc86080d9764
         </div>
     </div>
 </body>
